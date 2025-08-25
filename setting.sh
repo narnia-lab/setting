@@ -180,7 +180,12 @@ fi
 # 2.3 Install Gemini CLI
 CURRENT_STEP=$((CURRENT_STEP + 1))
 if ! command -v gemini &> /dev/null; then
-    run_with_spinner "npm install -g @google/gemini-cli --quiet" "Installing Narnia Lab (CLI)..."
+    # --- MODIFIED PART ---
+    # Display the installation progress and potential errors directly.
+    echo "" # Newline to avoid overwriting the progress bar
+    echo "Installing Narnia Lab (CLI)... This may take a moment."
+    npm install -g @google/gemini-cli
+    # --- END OF MODIFIED PART ---
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) installation complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) is already installed. (Skipping)"
@@ -280,27 +285,27 @@ export const shortAsciiLogo = `
 
 // Long version of the ASCII art logo for 'NARNIA' with decorative elements on the left. (Slant adjusted)
 export const longAsciiLogo = `
- ███         ██████   █████    ███████     ██████████   ██████   █████ █████    ███████    
-░░░███      ░░██████ ░░███   ░███░░░░███  ░░███░░░░███ ░░██████ ░░███ ░░███   ░███░░░░███  
-  ░░░███     ░███░███ ░███  ░███    ░░███  ░███   ░███  ░███░███ ░███  ░███  ░███    ░░███ 
-    ░░░███   ░███░░███░███  ░████████████  ░████████    ░███░░███░███  ░███  ░████████████ 
-      ███░   ░███ ░░██████  ░███░░░░░░███  ░███░░███    ░███ ░░██████  ░███  ░███░░░░░░███ 
-    ███░     ░███  ░░█████  ░███     ░███  ░███ ░░███   ░███  ░░█████  ░███  ░███     ░███ 
-  ███░       █████  ░░█████ █████    █████ █████ ░░████ █████  ░░█████ █████ █████    █████
-░░░         ░░░░░    ░░░░░ ░░░░░    ░░░░░ ░░░░░   ░░░░ ░░░░░    ░░░░░ ░░░░░ ░░░░░    ░░░░░ 
-`;          `;
+  ███         ██████   █████    ███████     ██████████   ██████   █████ █████    ███████    
+ ░░░███      ░░██████ ░░███   ░███░░░░███  ░░███░░░░███ ░░██████ ░░███ ░░███   ░███░░░░███  
+  ░░░███      ░███░███ ░███  ░███    ░░███  ░███   ░███  ░███░███ ░███  ░███  ░███    ░░███ 
+    ░░░███    ░███░░███░███  ░████████████  ░████████    ░███░░███░███  ░███  ░████████████ 
+      ███░    ░███ ░░██████  ░███░░░░░░███  ░███░░███    ░███ ░░██████  ░███  ░███░░░░░░███ 
+    ███░      ░███  ░░█████  ░███     ░███  ░███ ░░███   ░███  ░░█████  ░███  ░███     ░███ 
+  ███░        █████  ░░█████ █████    █████ █████ ░░████ █████  ░░█████ █████ █████    █████
+ ░░░         ░░░░░    ░░░░░ ░░░░░    ░░░░░ ░░░░░   ░░░░ ░░░░░    ░░░░░ ░░░░░ ░░░░░    ░░░░░ 
+`;
 
 // Tiny version of the ASCII art logo for the first two letters of 'NARNIA', 'NA'. (Slant adjusted)
 export const tinyAsciiLogo = `
- ███         ██████   █████    ███████    
-░░░███      ░░██████ ░░███   ░███░░░░███  
-  ░░░███     ░███░███ ░███  ░███    ░░███ 
-    ░░░███   ░███░░███░███  ░████████████ 
-      ███░   ░███ ░░██████  ░███░░░░░░███ 
-    ███░     ░███  ░░█████  ░███     ░███ 
-  ███░       █████  ░░█████ █████    █████
-░░░         ░░░░░    ░░░░░ ░░░░░    ░░░░░ 
-`;          `;
+  ███         ██████   █████    ███████    
+ ░░░███      ░░██████ ░░███   ░███░░░░███  
+  ░░░███      ░███░███ ░███  ░███    ░░███ 
+    ░░░███    ░███░░███░███  ░████████████ 
+      ███░    ░███ ░░██████  ░███░░░░░░███ 
+    ███░      ░███  ░░█████  ░███     ░███ 
+  ███░        █████  ░░█████ █████    █████
+ ░░░         ░░░░░    ░░░░░ ░░░░░    ░░░░░ 
+`;
 EOT
   done
 else

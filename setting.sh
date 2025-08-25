@@ -172,6 +172,8 @@ CURRENT_STEP=$((CURRENT_STEP + 1))
 if command -v nvm &> /dev/null && ! (nvm ls default | grep -q "lts\/\*"); then
     run_with_spinner "nvm install --lts > /dev/null && nvm use --lts > /dev/null && nvm alias default 'lts/*' > /dev/null" "Installing Node.js (LTS)..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) installation complete."
+    # Source nvm script again to update the current shell environment
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) is already installed. (Skipping)"
     sleep 1

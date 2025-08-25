@@ -39,7 +39,7 @@ trap 'handle_error $LINENO' ERR
 
 
 # --- Spinner icon for progress display ---
-spinner_chars="/-\"
+spinner_chars="/-\\"
 sinner_idx=0
 
 # --- Function to display progress ---

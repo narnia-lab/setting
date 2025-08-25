@@ -4,7 +4,7 @@ set -e
 
 # --- WSL Environment Check ---
 # If WSL is detected, change to the Linux home directory to prevent issues
-# with running the script from a mounted Windows directory (e.g., /mnt/c/...).
+# with running the script from a mounted Windows directory (e.g., /mnt/c/...). 
 if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then
     echo "WSL environment detected. Changing to home directory to ensure all operations are within the Linux filesystem."
     cd "${HOME}"
@@ -39,8 +39,8 @@ trap 'handle_error $LINENO' ERR
 
 
 # --- Spinner icon for progress display ---
-spinner_chars="/-\|"
-spinner_idx=0
+spinner_chars="/-\"
+sinner_idx=0
 
 # --- Function to display progress ---
 # $1: current step, $2: total steps, $3: current task message
@@ -124,10 +124,10 @@ CONDA_EXEC="$MINICONDA_PATH/bin/conda"
 
 # 1.3 Accept Anaconda ToS
 CURRENT_STEP=$((CURRENT_STEP + 1));
-run_with_spinner "yes | (
-    \"$CONDA_EXEC\" config --set channel_priority strict &&
-    \"$CONDA_EXEC\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main &&
-    \"$CONDA_EXEC\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+run_with_spinner "yes | ( \
+    \"$CONDA_EXEC\" config --set channel_priority strict && \
+    \"$CONDA_EXEC\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    \"$CONDA_EXEC\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
 )" "Processing Anaconda ToS agreement..."
 show_progress $CURRENT_STEP $TOTAL_STEPS "ToS agreement processing complete."
 
@@ -138,7 +138,7 @@ show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update complete."
 
 # 1.5 Create Conda virtual environment
 CURRENT_STEP=$((CURRENT_STEP + 1));
-if ! "$CONDA_EXEC" env list | grep -q "$ENV_NAME"; then
+if ! \"$CONDA_EXEC\" env list | grep -q "$ENV_NAME"; then
     run_with_spinner "\"$CONDA_EXEC\" create -n \"$ENV_NAME\" -y python=3.10 --quiet" "Creating Narnia-Lab environment..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia-Lab environment creation complete."
 else
@@ -169,7 +169,7 @@ export NVM_DIR="$HOME/.nvm"
 # 2.2 Install Node.js
 CURRENT_STEP=$((CURRENT_STEP + 1))
 # Execute after checking if NVM is loaded in the shell
-if command -v nvm &> /dev/null && ! (nvm ls default | grep -q "lts\/\*"); then
+if command -v nvm &> /dev/null && ! (nvm ls default | grep -q "lts\/"); then
     run_with_spinner "nvm install --lts > /dev/null && nvm use --lts > /dev/null && nvm alias default 'lts/*' > /dev/null" "Installing Node.js (LTS)..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) installation complete."
     # Source nvm script again to update the current shell environment
@@ -186,7 +186,7 @@ if ! command -v gemini &> /dev/null; then
     # Display the installation progress and potential errors directly.
     echo "" # Newline to avoid overwriting the progress bar
     echo "Installing Narnia Lab (CLI)... This may take a moment."
-    npm install -g @google/gemini-cli
+    run_with_spinner "npm install -g @google/gemini-cli" "Installing Narnia Lab (CLI)..."
     # --- END OF MODIFIED PART ---
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) installation complete."
 else

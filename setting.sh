@@ -40,7 +40,7 @@ trap 'handle_error $LINENO' ERR
 
 # --- Spinner icon for progress display ---
 spinner_chars="/-\\"
-sinner_idx=0
+spinner_idx=0
 
 # --- Function to display progress ---
 # $1: current step, $2: total steps, $3: current task message
@@ -62,17 +62,23 @@ show_progress() {
     for ((i=0; i<remaining_width; i++)); do bar+=" "; done
     bar+="]"
 
-    # Use \r to move to the beginning of the line and \033[K to clear the rest of the line.
-    printf "\r\033[K%s %s %d%% (%d/%d) - %s" "$spinner_char" "$bar" "$percentage" "$current_step" "$total_steps" "$message"
+    # Use \r to move to the beginning of the line and \033[K to clear it.
+    printf "\r\r\033[K%s %s %d%% (%d/%d) - %s" "$spinner_char" "$bar" "$percentage" "$current_step" "$total_steps" "$message"
 }
 
 # --- Function to run commands with a real-time spinner ---
 run_with_spinner() {
     local cmd="$1"
     local message="$2"
+    local log_file="$3" # Optional log file
 
-    # Run the command in the background.
-    eval "$cmd" > /dev/null 2>&1 &
+    # Default to /dev/null if no log file is provided
+    if [ -z "$log_file" ]; then
+        log_file="/dev/null"
+    fi
+
+    # Run the command in the background, redirecting stdout and stderr.
+    eval "$cmd" > "$log_file" 2>&1 &
     local cmd_pid=$!
 
     # Display spinner animation while the command is running.
@@ -81,8 +87,18 @@ run_with_spinner() {
         sleep 0.1 # Control animation speed
     done
 
-    # Wait for the command to finish and check its exit code (set -e handles errors).
-    wait $cmd_pid
+    # CORRECTED: Explicitly wait and check the exit code to ensure script stops on failure.
+    if ! wait $cmd_pid; then
+        echo "" # Newline to clear progress bar
+        echo "--------------------------------------------------" >&2
+        echo "❌ A background task failed." >&2
+        echo "   Task: $message" >&2
+        if [ "$log_file" != "/dev/null" ]; then
+            echo "   Please check the log for details: $log_file" >&2
+        fi
+        echo "--------------------------------------------------" >&2
+        exit 1 
+    fi
 }
 
 
@@ -103,7 +119,20 @@ ENV_NAME="Narnia-Lab"
 # 1.1 Check for Miniconda installation and proceed
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -d "$MINICONDA_PATH" ]; then
-    run_with_spinner "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p \"$MINICONDA_PATH\" && rm miniconda.sh" "Configuring base Python environment (Miniconda)..."
+    INSTALL_LOG="$HOME/miniconda_install.log"
+    
+    run_with_spinner "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p \"$MINICONDA_PATH\" && rm miniconda.sh" "Configuring base Python environment (Miniconda)..." "$INSTALL_LOG"
+    
+    # Verification step to ensure installation was successful
+    if [ ! -f "$MINICONDA_PATH/bin/conda" ]; then
+        echo "" # Newline
+        echo "--------------------------------------------------" >&2
+        echo "❌ Miniconda installation failed." >&2
+        echo "   Please check the log file for details: $INSTALL_LOG" >&2
+        echo "--------------------------------------------------" >&2
+        exit 1
+    fi
+    
     show_progress $CURRENT_STEP $TOTAL_STEPS "Base Python environment configuration complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Base Python environment is already installed. (Skipping)"
@@ -138,7 +167,8 @@ show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update complete."
 
 # 1.5 Create Conda virtual environment
 CURRENT_STEP=$((CURRENT_STEP + 1));
-if ! \"$CONDA_EXEC\" env list | grep -q "$ENV_NAME"; then
+# CORRECTED: Removed unnecessary backslash before the variable.
+if ! "$CONDA_EXEC" env list | grep -q "$ENV_NAME"; then
     run_with_spinner "\"$CONDA_EXEC\" create -n \"$ENV_NAME\" -y python=3.10 --quiet" "Creating Narnia-Lab environment..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia-Lab environment creation complete."
 else
@@ -182,12 +212,9 @@ fi
 # 2.3 Install Gemini CLI
 CURRENT_STEP=$((CURRENT_STEP + 1))
 if ! command -v gemini &> /dev/null; then
-    # --- MODIFIED PART ---
-    # Display the installation progress and potential errors directly.
     echo "" # Newline to avoid overwriting the progress bar
     echo "Installing Narnia Lab (CLI)... This may take a moment."
     run_with_spinner "npm install -g @google/gemini-cli" "Installing Narnia Lab (CLI)..."
-    # --- END OF MODIFIED PART ---
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) installation complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) is already installed. (Skipping)"

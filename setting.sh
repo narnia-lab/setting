@@ -223,7 +223,7 @@ fi
 # 2.4 Create Gemini CLI settings file
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -f "$HOME/.gemini/settings.json" ]; then
-    run_with_spinner "mkdir -p \"$HOME/.gemini\" && printf '{\n  \"selectedAuthType\": \"oauth-personal\"\n}' > \"$HOME/.gemini/settings.json\"" "Setting up CLI authentication..."
+    run_with_spinner "mkdir -p \"$HOME/.gemini\" && printf '{\n  \"selectedAuthType\": \"oauth-personal\",\n  \"theme\": \"Atom One\"\n}' > \"$HOME/.gemini/settings.json\"" "Setting up CLI authentication..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication setup complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication is already configured. (Skipping)"
@@ -395,59 +395,65 @@ then
     exit 1
 fi
 
+# 1. 사용자에게 분석할 시간 입력받기
+echo "몇 시간 이전까지의 prompt를 분석하시겠습니까? (숫자만 입력)"
+read -p "분석할 시간: " HOURS_AGO
+
+# 입력값이 숫자인지 확인
+if ! [[ "$HOURS_AGO" =~ ^[0-9]+$ ]] || [ -z "$HOURS_AGO" ]; then
+    echo "❌ 오류: 유효한 숫자를 입력해야 합니다."
+    exit 1
+fi
+# 시간을 분으로 변환 (find -mmin 옵션용)
+MINUTES_AGO=$((HOURS_AGO * 60))
+
 # 결과 저장 디렉토리 생성
 mkdir -p "$OUTPUT_DIR"
 
-# 1. 사용자에게 분석 범위 선택받기
-echo "어떤 범위의 프롬프트를 분석하시겠습니까?"
-select mode in "최신 로그 파일 1개" "오늘 하루 동안의 모든 로그" "취소"; do
-    case $mode in
-        "최신 로그 파일 1개" )
-            ANALYSIS_TITLE="✅ 최신 Gemini CLI 대화 로그 분석을 시작합니다..."
-            LOG_FILES=$(find "$LOG_DIR" -type f -name "logs.json" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -n 1 | cut -d' ' -f2-)
-            break
-            ;;
-        "오늘 하루 동안의 모든 로그" )
-            ANALYSIS_TITLE="✅ 오늘의 Gemini CLI 대화 로그 분석을 시작합니다..."
-            LOG_FILES=$(find "$LOG_DIR" -type f -name "logs.json" -mtime 0 2>/dev/null)
-            break
-            ;;
-        "취소" )
-            echo "작업을 취소했습니다."
-            exit 0
-            ;;
-        * )
-            echo "잘못된 선택입니다. 1, 2, 3 중 하나의 숫자를 입력하세요."
-            ;;
-    esac
-done
-
 # 2. 로그 파일 분석 시작
+ANALYSIS_TITLE="✅ 최근 ${HOURS_AGO}시간 동안의 Gemini 대화 로그 분석을 시작합니다..."
 echo "--------------------------------------------------"
 echo "$ANALYSIS_TITLE"
 
+# 1단계: 파일 필터링 (최근 N시간 이내에 수정된 logs.json 파일 찾기)
+echo "🔍 1단계: 최근 ${HOURS_AGO}시간 내에 수정된 로그 파일을 찾습니다..."
+LOG_FILES=$(find "$LOG_DIR" -type f -name "logs.json" -mmin -${MINUTES_AGO} 2>/dev/null)
+
 if [ -z "$LOG_FILES" ]; then
-  echo "❌ 오류: 선택한 범위에서 'logs.json' 파일을 찾을 수 없습니다."
+  echo "❌ 오류: 지난 ${HOURS_AGO}시간 동안 수정된 'logs.json' 파일을 찾을 수 없습니다."
   exit 1
 fi
-echo "🔍 분석 대상 로그 파일들을 찾았습니다:"
-echo "$LOG_FILES"
+echo "👍 분석 대상을 찾았습니다:"
+#echo "$LOG_FILES"
 
 
 # 3. 모든 로그 파일에서 프롬프트를 추출하여 하나의 파일에 저장
+echo "🔍 2단계: 파일 내용에서 최근 ${HOURS_AGO}시간 내의 프롬프트를 추출합니다..."
 # 먼저 prompts.txt 파일을 비움
 > "${PROMPT_FILE}"
 
+# ISO 8601 형식 (UTC)으로 비교 시간 계산
+# GNU date (Linux)
+if date --version >/dev/null 2>&1; then
+    CUTOFF_TIMESTAMP=$(date -u -d"${HOURS_AGO} hours ago" --iso-8601=seconds)
+# BSD date (macOS)
+else
+    CUTOFF_TIMESTAMP=$(date -u -v-${HOURS_AGO}H +"%Y-%m-%dT%H:%M:%SZ")
+fi
+
 for LOG_FILE in $LOG_FILES; do
-  # jq: JSON 처리기. 각 로그 파일에서 type이 "user"인 항목의 message 값을 추출하여 PROMPT_FILE에 추가(>>)
-  jq -r '.[] | select(.type == "user") | .message' "${LOG_FILE}" >> "${PROMPT_FILE}"
+  # 2단계: JSON 내용 필터링
+  # jq를 사용해 type이 "user"이고, timestamp가 CUTOFF_TIMESTAMP 이후인 프롬프트만 추출
+  # logs.json에 'timestamp' 필드가 ISO 8601 형식으로 저장되어 있다고 가정
+  jq -r --arg cutoff_time "$CUTOFF_TIMESTAMP" '.[] | select(.type == "user" and .timestamp > $cutoff_time) | .message' "${LOG_FILE}" >> "${PROMPT_FILE}"
 done
 
 
 # -s 옵션: 파일이 존재하는지 그리고 크기가 0보다 큰지 확인
 if [ ! -s "${PROMPT_FILE}" ]; then
-  echo "❌ 오류: 로그 파일에서 프롬프트를 추출하지 못했습니다."
-  echo "   로그 파일들의 JSON 구조를 확인하고, 스크립트의 jq 필터를 수정해야 할 수 있습니다."
+  echo "❌ 오류: 지정된 시간 내에서 프롬프트를 추출하지 못했습니다."
+  echo "   - 로그 파일의 JSON에 'timestamp' 필드가 없거나 형식이 다를 수 있습니다."
+  echo "   - 또는 해당 시간 내에 작성된 프롬프트가 없을 수 있습니다."
   rm "${PROMPT_FILE}" # 내용이 없는 파일도 삭제
   exit 1
 fi
@@ -459,7 +465,7 @@ echo "🤖 Gemini에게 프롬프트 개선 방안을 요청합니다..."
 echo "------------------- 분석 결과 -------------------"
 
 # 분석을 요청하는 질문 (Meta-Prompt)
-META_PROMPT="'prompts.txt' 파일에 담긴 아래 프롬프트들을 각각 다음 3단계에 맞춰 분석하고 제안해줘.
+META_PROMPT="'prompts.txt' 파일에 담긴 아래 프롬프트를 각각 다음 3단계에 맞춰 분석하고 제안해줘.
 
 1. **원본 프롬프트**: (내가 작성한 프롬프트 내용)
 2. **개선 제안**: (어떻게 바꾸면 좋을지에 대한 구체적인 의견)
@@ -481,10 +487,10 @@ echo "$ANALYSIS_RESULT" > "$OUTPUT_FILE"
 
 
 # 6. 임시 파일 삭제 (주석 처리)
- rm "${PROMPT_FILE}"
+# rm "${PROMPT_FILE}"
 echo "--------------------------------------------------"
 echo "✅ 모든 과정이 완료되었습니다."
-#echo "   - 분석에 사용된 '${PROMPT_FILE}' 파일은 현재 위치에 보존됩니다."
+echo "   - 분석에 사용된 '${PROMPT_FILE}' 파일은 현재 위치에 보존됩니다."
 echo "   - 분석 결과는 '${OUTPUT_FILE}' 파일에 저장되었습니다."
 EOF
 # Grant execute permission to the created script
@@ -504,6 +510,12 @@ echo "alias narnia-feedback='bash \$HOME/.narnia/prompt_feedback.sh'" >> ~/.bash
 
 show_progress $CURRENT_STEP $TOTAL_STEPS "'narnia-feedback' alias setup complete."
 
+
+# Remove any existing narnia-feedback alias.
+sed -i "/alias narnia-update=/d" ~/.bashrc > /dev/null 2>&1 || true
+
+# Add the new alias to .bashrc.
+echo "alias narnia-update='curl -fsSL https://raw.githubusercontent.com/narnia-lab/setting/master/setting.sh | bash'" >> ~/.bashrc
 
 # --- Complete ---
 # Unset the error trap

@@ -87,7 +87,7 @@ run_with_spinner() {
         sleep 0.1 # Control animation speed
     done
 
-    # CORRECTED: Explicitly wait and check the exit code to ensure script stops on failure.
+    # Explicitly wait and check the exit code to ensure script stops on failure.
     if ! wait $cmd_pid; then
         echo "" # Newline to clear progress bar
         echo "--------------------------------------------------" >&2
@@ -119,16 +119,16 @@ ENV_NAME="Narnia-Lab"
 # 1.1 Check for Miniconda installation and proceed
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -d "$MINICONDA_PATH" ]; then
-    INSTALL_LOG="$HOME/miniconda_install.log"
-    
-    run_with_spinner "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p \"$MINICONDA_PATH\" && rm miniconda.sh" "Configuring base Python environment (Miniconda)..." "$INSTALL_LOG"
+    # CORRECTED: Removed the log file argument. Output will now go to /dev/null.
+    run_with_spinner "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p \"$MINICONDA_PATH\" && rm miniconda.sh" "Configuring base Python environment (Miniconda)..."
     
     # Verification step to ensure installation was successful
     if [ ! -f "$MINICONDA_PATH/bin/conda" ]; then
         echo "" # Newline
         echo "--------------------------------------------------" >&2
         echo "❌ Miniconda installation failed." >&2
-        echo "   Please check the log file for details: $INSTALL_LOG" >&2
+        # CORRECTED: Updated the error message as the log file is no longer created.
+        echo "   The installation command failed to execute successfully." >&2
         echo "--------------------------------------------------" >&2
         exit 1
     fi
@@ -167,7 +167,6 @@ show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update complete."
 
 # 1.5 Create Conda virtual environment
 CURRENT_STEP=$((CURRENT_STEP + 1));
-# CORRECTED: Removed unnecessary backslash before the variable.
 if ! "$CONDA_EXEC" env list | grep -q "$ENV_NAME"; then
     run_with_spinner "\"$CONDA_EXEC\" create -n \"$ENV_NAME\" -y python=3.10 --quiet" "Creating Narnia-Lab environment..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia-Lab environment creation complete."
@@ -202,8 +201,8 @@ CURRENT_STEP=$((CURRENT_STEP + 1))
 if command -v nvm &> /dev/null && ! (nvm ls default | grep -q "lts\/"); then
     run_with_spinner "nvm install --lts > /dev/null && nvm use --lts > /dev/null && nvm alias default 'lts/*' > /dev/null" "Installing Node.js (LTS)..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) installation complete."
-    # Source nvm script again to update the current shell environment
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    sleep 0.1
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" > /dev/null 2>&1
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) is already installed. (Skipping)"
     sleep 1
@@ -522,8 +521,6 @@ echo "--- How to Use ---"
 echo ""
 echo "In the new terminal, navigate to your desired working directory and type 'narnia'."
 echo "On the first run, you will need to log in with your Google account as prompted."
-echo "Now, the CLI logo and name will be changed automatically when you run the 'narnia' command."
 echo "You can also use 'narnia-feedback' to analyze your prompt history."
 echo ""
 echo "------------------"
-

@@ -181,10 +181,19 @@ fi
 # 2.1 Install NVM
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -d "$HOME/.nvm" ]; then
+    # Fetch the latest NVM version dynamically from GitHub.
     LATEST_NVM_VERSION=$(curl -s https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    # If fetching fails, print an error and exit.
     if [ -z "$LATEST_NVM_VERSION" ]; then
-        LATEST_NVM_VERSION="v0.39.7"
+        echo "" # Newline for readability
+        echo "--------------------------------------------------" >&2
+        echo "❌ Error: Could not fetch the latest NVM version." >&2
+        echo "   Please check your internet connection and try again." >&2
+        echo "--------------------------------------------------" >&2
+        exit 1
     fi
+    
     run_with_spinner "curl -s -o- https://raw.githubusercontent.com/nvm-sh/nvm/$LATEST_NVM_VERSION/install.sh | bash" "Preparing Node.js version manager ($LATEST_NVM_VERSION)..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js version manager setup complete."
 else
@@ -517,6 +526,7 @@ sed -i "/alias narnia-update=/d" ~/.bashrc > /dev/null 2>&1 || true
 # Add the new alias to .bashrc.
 echo "alias narnia-update='curl -fsSL https://raw.githubusercontent.com/narnia-lab/setting/master/setting.sh | bash'" >> ~/.bashrc
 
+source ~/.bashrc
 # --- Complete ---
 # Unset the error trap
 trap - ERR
@@ -536,3 +546,4 @@ echo "On the first run, you will need to log in with your Google account as prom
 echo "You can also use 'narnia-feedback' to analyze your prompt history."
 echo ""
 echo "------------------"
+

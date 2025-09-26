@@ -43,27 +43,11 @@ spinner_chars="/-\\"
 spinner_idx=0
 
 # --- Function to display progress ---
-# $1: current step, $2: total steps, $3: current task message
+# This function now ignores all arguments and prints a static message.
 show_progress() {
-    local current_step=$1
-    local total_steps=$2
-    local message="$3"
-    local percentage=$((current_step * 100 / total_steps))
-    local bar_width=40
-    local completed_width=$((bar_width * percentage / 100))
-    local remaining_width=$((bar_width - completed_width))
-
     local spinner_char=${spinner_chars:spinner_idx:1}
     spinner_idx=$(((spinner_idx + 1) % ${#spinner_chars}))
-
-    # Create progress bar
-    local bar="["
-    for ((i=0; i<completed_width; i++)); do bar+="="; done
-    for ((i=0; i<remaining_width; i++)); do bar+=" "; done
-    bar+="]"
-
-    # Use \r to move to the beginning of the line and \033[K to clear it.
-    printf "\r\r\033[K%s %s %d%% (%d/%d) - %s" "$spinner_char" "$bar" "$percentage" "$current_step" "$total_steps" "$message"
+    printf "\r\033[K%s Narnia 패키지를 업데이트 중입니다..." "$spinner_char"
 }
 
 # --- Function to run commands with a real-time spinner ---
@@ -102,9 +86,7 @@ run_with_spinner() {
 }
 
 
-# --- Script Start ---
-echo "🚀 Starting setup for Narnia Integrated Environment on Linux..."
-sleep 1
+
 
 # Define total number of steps
 TOTAL_STEPS=16
@@ -598,20 +580,7 @@ source ~/.bashrc
 # --- Complete ---
 # Unset the error trap
 trap - ERR
-show_progress $TOTAL_STEPS $TOTAL_STEPS "All setup complete!"
-echo "" # Move to the next line after the progress bar
-echo ""
-echo "🎉 Narnia Integrated Environment setup completed successfully! 🎉"
-echo ""
-echo "--- ⚠️ IMPORTANT ---"
-echo "To apply all changes, you must close the current terminal and open a new one."
-echo "The new terminal will start with the '($ENV_NAME)' environment."
-echo ""
-echo "--- How to Use ---"
-echo ""
-echo "In the new terminal, navigate to your desired working directory and type 'narnia'."
-echo "On the first run, you will need to log in with your Google account as prompted."
-echo "You can also use 'narnia-feedback' to analyze your prompt history."
-echo ""
-echo "------------------"
+# Clear the spinner line and print the final message
+printf "\r\033[K"
+echo "업데이트가 완료되었습니다."
 

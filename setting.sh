@@ -107,7 +107,7 @@ echo "🚀 Starting setup for Narnia Integrated Environment on Linux..."
 sleep 1
 
 # Define total number of steps
-TOTAL_STEPS=15
+TOTAL_STEPS=16
 CURRENT_STEP=0
 
 # Define Miniconda installation path and environment name
@@ -238,6 +238,76 @@ else
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication is already configured. (Skipping)"
     sleep 1
 fi
+
+
+# --- 2.5. Create Narnia Docs file ---
+CURRENT_STEP=$((CURRENT_STEP + 1));
+show_progress $CURRENT_STEP $TOTAL_STEPS "Creating Narnia documentation file..."
+# Create GEMINI.md file using a Here Document
+cat <<'EOF' > "$HOME/.gemini/GEMINI.md"
+# 로컬에서 웹 애플리케이션 실행하기
+
+이 문서는 다양한 유형의 웹 프로젝트를 로컬 환경에서 실행하는 방법을 안내합니다.
+
+---
+
+## React 프로젝트 실행하기 (`npm`)
+
+`package.json`을 사용하는 Node.js 기반의 React 프로젝트를 실행하는 방법입니다.
+
+1.  **의존성 설치**:
+    프로젝트에 `node_modules` 디렉토리가 없는 경우, 먼저 다음 명령어로 의존성을 설치합니다.
+    ```bash
+    npm install
+    ```
+
+2.  **개발 서버 시작**:
+    다음 명령어를 실행하여 React 개발 서버를 시작합니다.
+    ```bash
+    npm start &
+    ```
+
+3.  **IP 주소 확인 및 접속**:
+    개발 서버는 일반적으로 3000번 포트를 사용합니다. 다음 명령어로 IP 주소를 확인한 후, 웹 브라우저에서 `http://[IP 주소]:3000`으로 접속하세요.
+    ```bash
+    hostname -I
+    ```
+
+---
+
+## 정적 웹사이트/게임 실행기 (Python HTTP 서버)
+
+HTML, CSS, JavaScript로 구성된 간단한 정적 웹사이트나 웹 기반 게임을 실행하는 방법입니다.
+
+1.  **사용 가능한 포트 찾기**:
+    다른 서비스와의 충돌을 피하기 위해 사용 가능한 포트를 찾습니다.
+    ```bash
+    python3 -c '''import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'''
+    ```
+
+2.  **로컬 HTTP 서버 시작**:
+    위에서 찾은 포트 번호(`[PORT]`)를 사용하여 Python 내장 HTTP 서버를 시작합니다. `&` 기호는 서버를 백그라운드에서 실행합니다.
+    ```bash
+    python3 -m http.server [PORT] &
+    ```
+
+3.  **로컬 IP 주소 확인**:
+    접속할 IP 주소를 확인합니다.
+    ```bash
+    hostname -I
+    ```
+
+4.  **게임 접속**:
+    웹 브라우저를 열고 `http://[당신의_IP_주소]:[PORT]` 형식으로 접속합니다.
+
+5.  **문제 해결 (Troubleshooting)**:
+    *   **서버 접속 불가**: 선택한 포트가 방화벽에 의해 차단되었을 수 있습니다. 다른 포트를 사용하여 다시 시도해 보세요.
+    *   **포트 사용 중 오류**: `Address already in use` 오류가 발생하면, 다른 포트를 찾거나 다음 명령어로 해당 포트를 사용하는 프로세스를 종료하세요.
+        ```bash
+        lsof -t -i :[PORT] | xargs -r kil
+EOF
+show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia documentation file creation complete."
+sleep 0.5
 
 
 # --- 3. Default Environment and Alias Setup ---

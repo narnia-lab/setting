@@ -214,7 +214,7 @@ fi
 # 2.4 Create Gemini CLI settings file
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -f "$HOME/.gemini/settings.json" ]; then
-    run_with_spinner "mkdir -p \"$HOME/.gemini\" && printf '{\n  \"selectedAuthType\": \"oauth-personal\",\n  \"theme\": \"Atom One\"\n}' > \"$HOME/.gemini/settings.json\"" "Setting up CLI authentication..."
+    run_with_spinner "mkdir -p \"$HOME/.gemini\" && printf '{\n  \"selectedAuthType\": \"oauth-personal\"\n}' > \"$HOME/.gemini/settings.json\"" "Setting up CLI authentication..."
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication setup complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication is already configured. (Skipping)"

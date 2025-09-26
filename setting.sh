@@ -576,6 +576,18 @@ sed -i "/alias narnia-update=/d" ~/.bashrc > /dev/null 2>&1 || true
 # Add the new alias to .bashrc.
 echo "alias narnia-update='curl -fsSL https://raw.githubusercontent.com/narnia-lab/setting/master/setting.sh | bash'" >> ~/.bashrc
 
+
+# --- 7. Set up automatic update on login ---
+# The code to be added to .profile
+AUTO_UPDATE_CODE="# Automatically run narnia-update on login\nnarnia-update"
+
+# Check if the code already exists in .profile to avoid duplicates
+if ! grep -qF "narnia-update" ~/.profile 2>/dev/null; then
+    echo "" >> ~/.profile # Add a newline for separation
+    echo -e "$AUTO_UPDATE_CODE" >> ~/.profile
+fi
+
+
 source ~/.bashrc
 # --- Complete ---
 # Unset the error trap

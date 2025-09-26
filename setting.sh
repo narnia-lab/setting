@@ -113,12 +113,14 @@ CURRENT_STEP=0
 # Define Miniconda installation path and environment name
 MINICONDA_PATH="$HOME/miniconda"
 ENV_NAME="Narnia-Lab"
+MINICONDA_JUST_INSTALLED=false # Flag to track if installed in this run
 
 # --- 1. Python Environment Setup (Miniconda) ---
 
 # 1.1 Check for Miniconda installation and proceed
 CURRENT_STEP=$((CURRENT_STEP + 1));
 if [ ! -d "$MINICONDA_PATH" ]; then
+    MINICONDA_JUST_INSTALLED=true
     # CORRECTED: Removed the log file argument. Output will now go to /dev/null.
     run_with_spinner "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p \"$MINICONDA_PATH\" && rm miniconda.sh" "Configuring base Python environment (Miniconda)..."
     
@@ -136,7 +138,6 @@ if [ ! -d "$MINICONDA_PATH" ]; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Base Python environment configuration complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Base Python environment is already installed. (Skipping)"
-    sleep 1
 fi
 
 # 1.2 Initialize Conda
@@ -146,7 +147,6 @@ if ! grep -q ">>> conda initialize >>>" ~/.bashrc; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Shell environment setup complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Conda is already set up in your shell environment. (Skipping)"
-    sleep 1
 fi
 
 CONDA_EXEC="$MINICONDA_PATH/bin/conda"
@@ -162,8 +162,12 @@ show_progress $CURRENT_STEP $TOTAL_STEPS "ToS agreement processing complete."
 
 # 1.4 Update Conda
 CURRENT_STEP=$((CURRENT_STEP + 1))
-run_with_spinner "\"$CONDA_EXEC\" update -n base -c defaults conda -y --quiet" "Updating Conda packages..."
-show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update complete."
+if [ "$MINICONDA_JUST_INSTALLED" = true ]; then
+    run_with_spinner "\"$CONDA_EXEC\" update -n base -c defaults conda -y --quiet" "Updating Conda packages..."
+    show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update complete."
+else
+    show_progress $CURRENT_STEP $TOTAL_STEPS "Conda package update skipped for faster re-runs."
+fi
 
 # 1.5 Create Conda virtual environment
 CURRENT_STEP=$((CURRENT_STEP + 1));
@@ -172,7 +176,6 @@ if ! "$CONDA_EXEC" env list | grep -q "$ENV_NAME"; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia-Lab environment creation complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia-Lab environment already exists. (Skipping)"
-    sleep 1
 fi
 
 
@@ -198,7 +201,6 @@ if [ ! -d "$HOME/.nvm" ]; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js version manager setup complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js version manager (NVM) is already installed. (Skipping)"
-    sleep 1
 fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -214,7 +216,6 @@ if command -v nvm &> /dev/null && ! (nvm ls default | grep -q "lts\/"); then
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" > /dev/null 2>&1
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Node.js (LTS) is already installed. (Skipping)"
-    sleep 1
 fi
 
 # 2.3 Install Gemini CLI
@@ -226,7 +227,6 @@ if ! command -v gemini &> /dev/null; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) installation complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Narnia Lab (CLI) is already installed. (Skipping)"
-    sleep 1
 fi
 
 # 2.4 Create Gemini CLI settings file
@@ -236,7 +236,6 @@ if [ ! -f "$HOME/.gemini/settings.json" ]; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication setup complete."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "CLI authentication is already configured. (Skipping)"
-    sleep 1
 fi
 
 
@@ -319,7 +318,6 @@ if ! grep -qxF "conda activate $ENV_NAME" ~/.bashrc; then
     show_progress $CURRENT_STEP $TOTAL_STEPS "Automatic environment activation configured."
 else
     show_progress $CURRENT_STEP $TOTAL_STEPS "Automatic environment activation is already set up. (Skipping)"
-    sleep 1
 fi
 
 # 3.2 Set up 'narnia' command (function) in .bashrc

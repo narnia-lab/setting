@@ -574,7 +574,7 @@ show_progress $CURRENT_STEP $TOTAL_STEPS "'narnia-feedback' alias setup complete
 sed -i "/alias narnia-update=/d" ~/.bashrc > /dev/null 2>&1 || true
 
 # Add the new alias to .bashrc.
-echo "alias narnia-update='curl -fsSL https://raw.githubusercontent.com/narnia-lab/setting/master/setting.sh | bash'" >> ~/.bashrc
+echo "alias narnia-update='curl -fsSL https://raw.githubusercontent.com/narnia-lab/setting/main/setting.sh | bash'" >> ~/.bashrc
 
 
 # --- 7. Set up automatic update on login ---

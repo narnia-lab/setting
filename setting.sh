@@ -312,7 +312,6 @@ sed -i '/# Function to run Narnia customization script and call gemini/,/}/d' ~/
 
 # Add the new narnia function to .bashrc.
 cat <<'EOF' >> ~/.bashrc
-
 # Function to run Narnia customization script and call gemini
 narnia() {
     # Check if the .narnia/setting.sh script exists and run it.
